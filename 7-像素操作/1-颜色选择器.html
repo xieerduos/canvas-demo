@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            main {
+                display: flex;
+            }
+            #hovered-color {
+                width: 200px;
+                height: 350px;
+                border: 1px solid #0f0;
+            }
+            #selected-color {
+                width: 200px;
+                height: 350px;
+                border: 1px solid #f00;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <canvas width="400" height="400" id="canvas"></canvas>
+            <div id="hovered-color"></div>
+            <div id="selected-color"></div>
+        </main>
+        <script>
+            var img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "./girl.jpg";
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            img.onload = function () {
+                ctx.drawImage(img, 0, 0);
+                img.style.display = "none";
+            };
+            var hoveredColor = document.getElementById("hovered-color");
+            var selectedColor = document.getElementById("selected-color");
+
+            function pick(event, destination) {
+                var x = event.layerX;
+                var y = event.layerY;
+                var pixel = ctx.getImageData(x, y, 1, 1);
+                var data = pixel.data;
+
+                const rgba = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${
+                    data[3] / 255
+                })`;
+                destination.style.background = rgba;
+                destination.textContent = rgba;
+
+                return rgba;
+            }
+
+            canvas.addEventListener("mousemove", function (event) {
+                pick(event, hoveredColor);
+            });
+            canvas.addEventListener("click", function (event) {
+                pick(event, selectedColor);
+            });
+        </script>
+    </body>
+</html>

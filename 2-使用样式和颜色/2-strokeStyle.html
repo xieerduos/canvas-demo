@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            #canvas {
+                border: 1px solid #f00;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="300" height="250" id="canvas"></canvas>
+        <script>
+            function draw() {
+                var ctx = document.getElementById("canvas").getContext("2d");
+                for (var i = 0; i < 6; i++) {
+                    for (var j = 0; j < 6; j++) {
+                        ctx.strokeStyle =
+                            "rgb(0," +
+                            Math.floor(255 - 42.5 * i) +
+                            "," +
+                            Math.floor(255 - 42.5 * j) +
+                            ")";
+                        ctx.beginPath();
+                        ctx.arc(
+                            12.5 + j * 25,
+                            12.5 + i * 25,
+                            10,
+                            0,
+                            Math.PI * 2,
+                            true
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+            draw();
+        </script>
+    </body>
+</html>

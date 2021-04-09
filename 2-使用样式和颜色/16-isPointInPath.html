@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            #canvas {
+                border: 1px solid #f00;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="300" height="250" id="canvas"></canvas>
+
+        <div id="target"></div>
+        <script>
+            function draw() {
+                const canvas = document.getElementById("canvas");
+                const target = document.getElementById("target");
+
+                const ctx = canvas.getContext("2d");
+
+                ctx.rect(10, 10, 100, 100);
+                ctx.stroke();
+                console.log(ctx.isPointInPath(10, 10)); // true
+                canvas.addEventListener("mousemove", (event) => {
+                    const { offsetX: x, offsetY: y } = event;
+                    const isPointInPath = ctx.isPointInPath(x, y);
+                    target.innerHTML = `x, y: ${x}, ${y} isPointInPath: ${isPointInPath}`;
+                });
+            }
+            draw();
+        </script>
+    </body>
+</html>
