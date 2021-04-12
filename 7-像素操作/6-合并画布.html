@@ -16,11 +16,15 @@
             body {
                 background: skyblue;
             }
-            canvas {
+            #canvas,
+            #zoomdom {
                 border: 1px solid #f00;
                 position: absolute;
                 left: 0;
                 top: 0;
+            }
+            #canvas {
+                display: inline-block;
             }
             #hovered-color {
                 width: 200px;
@@ -35,12 +39,23 @@
             .color-container {
                 display: flex;
             }
+            #merge-container {
+                width: 200px;
+                height: 200px;
+                border: 1px solid #f00;
+            }
         </style>
     </head>
     <body>
         <canvas id="canvas" width="300" height="350"></canvas>
-        <canvas id="zoom" width="300" height="350"></canvas>
+        <canvas id="zoomdom" width="300" height="350"></canvas>
+
         <main id="main" style="margin-top: 360px">
+            <div>
+                <button id="merge-btn">合并画布</button>
+                <div id="merge-container"></div>
+            </div>
+
             <div>
                 <label for="smoothbtn">
                     <input
@@ -64,7 +79,7 @@
                     // init bind this
                     this.main = this.main.bind(this);
                     this.draw = this.draw.bind(this);
-                    this.zoom = this.zoom.bind(this);
+                    this.zoomRender = this.zoomRender.bind(this);
                     this.pick = this.pick.bind(this);
                     this.handleSmoothChange = this.handleSmoothChange.bind(
                         this
@@ -73,101 +88,144 @@
                     this.onMouseMove = this.onMouseMove.bind(this);
                     this.onMouseDown = this.onMouseDown.bind(this);
                     this.onMouseUp = this.onMouseUp.bind(this);
+                    this.onClickEvent = this.onClickEvent.bind(this);
+
+                    this.$canvas = document.getElementById("canvas");
+                    this.$zoomdom = document.getElementById("zoomdom");
+
+                    this.$hoveredColor = document.getElementById(
+                        "hovered-color"
+                    );
+                    this.$selectedColor = document.getElementById(
+                        "selected-color"
+                    );
+
+                    // 缩放画布的上下文
+                    this.zoomctx = this.$zoomdom.getContext("2d");
+
+                    // 画布上下文
+                    this.ctx = this.$canvas.getContext("2d");
+
+                    // 背景图
+                    this.bgImage = null;
                 }
 
-                onMouseMove() {}
-                onMouseDown() {}
+                onMouseMove(event) {
+                    // const $zoomdom = this.$zoomdom;
+                    const $hoveredColor = this.$hoveredColor;
+                    const ctx = this.ctx;
+                    const zoomctx = this.zoomctx;
+
+                    // if (event.target === $zoomdom) {
+                    //     this.zoomRender({
+                    //         zoomctx,
+                    //         pageX: event.pageX,
+                    //         pageY: event.pageY,
+                    //         $zoomdom,
+                    //     });
+                    //     this.pick(ctx, event, $hoveredColor);
+                    // }
+                }
+                onMouseDown(event) {}
                 onMouseUp() {}
 
+                // 监听文档的click事件
+                onClickEvent(event) {
+                    const ctx = this.ctx;
+                    const $selectedColor = this.$selectedColor;
+                    this.pick(ctx, event, $selectedColor);
+                }
+
                 // 销毁有副作用的函数
-                destroy() {}
+                destroy() {
+                    document.removeEventListener("mousemove", this.onMouseMove);
+                    document.removeEventListener("click", this.onClickEvent);
+                }
 
                 // 程序入口
                 main({ imgUrl }) {
-                    const draw = this.draw;
-                    const img = new Image();
+                    return new Promise((resolve, reject) => {
+                        const draw = this.draw;
+                        const img = new Image();
 
-                    // img.src = "./girl.jpg";
-                    img.src = imgUrl;
+                        // img.src = "./girl.jpg";
+                        img.src = imgUrl;
 
-                    img.onload = function () {
-                        // 图片加载完成 开始绘制canvas
-                        draw(this);
-                    };
-                    img.style.display = "none";
+                        this.bgImage = img;
+
+                        img.onload = () => {
+                            // 图片加载完成 开始绘制canvas
+                            draw(img);
+                            resolve(this);
+                        };
+
+                        img.onerror = (err) => reject(err);
+
+                        img.style.display = "none";
+
+                        document.addEventListener(
+                            "mousemove",
+                            this.onMouseMove
+                        );
+
+                        document.addEventListener("click", this.onClickEvent);
+                    });
                 }
 
                 // 绘制画布
                 draw(img) {
-                    const handleSmoothChange = this.handleSmoothChange;
-                    const zoom = this.zoom;
-                    const pick = this.pick;
-                    const canvas = document.getElementById("canvas");
-                    const zoomdom = document.getElementById("zoom");
-
-                    const hoveredColor = document.getElementById(
-                        "hovered-color"
-                    );
-                    const selectedColor = document.getElementById(
-                        "selected-color"
-                    );
+                    const $canvas = this.$canvas;
+                    const $zoomdom = this.$zoomdom;
 
                     // 画布宽高设置为图片的宽高
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    zoomdom.width = img.width;
-                    zoomdom.height = img.height;
-
-                    document.getElementById("main").style.marginTop = `${
-                        img.height + 20
-                    }px`;
-
-                    // 画布上下文
-                    const ctx = canvas.getContext("2d");
+                    $canvas.width = img.width;
+                    $canvas.height = img.height;
+                    $zoomdom.width = img.width;
+                    $zoomdom.height = img.height;
 
                     // 从0,0坐标开始绘制图片
-                    ctx.drawImage(img, 0, 0);
-
-                    // 缩放画布的上下文
-                    const zoomctx = zoomdom.getContext("2d");
+                    this.ctx.drawImage(img, 0, 0);
 
                     // 控制图片的质量
-                    handleSmoothChange(zoomctx);
+                    this.handleSmoothChange(this.zoomctx);
 
                     // 默认选中
-                    zoom({ zoomctx }, { pageX: 0, pageY: 0 }, zoomdom);
-
-                    document.addEventListener("mousemove", (event) => {
-                        if (event.target === zoomdom) {
-                            zoom({ zoomctx }, event, zoomdom);
-                            pick(ctx, event, hoveredColor);
-                        }
-                    });
-
-                    document.addEventListener("click", function (event) {
-                        pick(ctx, event, selectedColor);
+                    this.zoomRender({
+                        zoomctx: this.zoomctx,
+                        pageX: 0,
+                        pageY: 0,
+                        $zoomdom,
+                        $canvas,
                     });
                 }
 
                 // 缩放绘制,添加蒙层
-                zoom({ zoomctx }, { pageX, pageY }, zoomdom) {
+                zoomRender({
+                    zoomctx,
+                    pageX,
+                    pageY,
+                    $zoomdom,
+                    $canvas,
+                    ...args
+                }) {
                     // console.log(`pageX, pageY`, pageX, pageY);
                     // 获取画布的宽高
-                    const { width, height } = zoomdom;
+                    const { width, height } = $zoomdom;
 
                     // console.log(`width, height`, width, height);
 
                     const selectRect = {
                         x: Math.abs(pageX), // 鼠标的坐标
                         y: Math.abs(pageY),
-                        w: 300, // 截取画布的宽度(图片)
-                        h: 300,
+                        w: 200, // 截取画布的宽度(图片)
+                        h: 200,
                         dx: Math.abs(pageX), // 绘制在新的画布上的坐标
                         dy: Math.abs(pageY),
-                        dw: 300, // 绘制在新的画布上的宽高
-                        dh: 300,
+                        dw: 200, // 绘制在新的画布上的宽高
+                        dh: 200,
                         width,
                         height,
+                        ...args,
                     };
 
                     const { x, y, w, h, dx, dy, dw, dh } = selectRect;
@@ -175,8 +233,17 @@
                     // 清空画布
                     zoomctx.clearRect(0, 0, width, height);
 
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 注意这里----------
+                    // 放大效果需要把这个打开
                     // 重新绘制
-                    zoomctx.drawImage(canvas, x, y, w, h, dx, dy, dw, dh);
+                    zoomctx.drawImage($canvas, x, y, w, h, dx, dy, dw, dh);
 
                     zoomctx.font = "24px MicrosoftYahei";
                     zoomctx.fillText(`Hello~~`, dx + 10, dy + 20);
@@ -230,7 +297,48 @@
 
             const capture = new CaptureEditor();
 
-            capture.main({ imgUrl: "./background1500.jpg" });
+            capture.main({ imgUrl: "./background1500.jpg" }).then((capture) => {
+                document.getElementById("main").style.marginTop = `${
+                    capture.bgImage.height + 20
+                }px`;
+            });
+
+            const mergeBtn = document.getElementById("merge-btn");
+
+            mergeBtn.addEventListener("click", () => {
+                console.log("capture", capture);
+                const mergeDom = document.createElement("canvas");
+                mergeDom.width = 200;
+                mergeDom.height = 200;
+                mergeDom.style.width = 200 + "px";
+                mergeDom.style.height = 200 + "px";
+                mergeDom.style.border = "1px solid #f00";
+
+                const ctx = mergeDom.getContext("2d");
+                const ctx2 = mergeDom.getContext("2d");
+
+                // 下面画布会自动叠加
+                ctx.drawImage(capture.$canvas, 0, 0, 200, 200, 0, 0, 200, 200);
+
+                // 这个是透明的
+                ctx2.drawImage(
+                    capture.$zoomdom,
+                    0,
+                    0,
+                    200,
+                    200,
+                    0,
+                    0,
+                    200,
+                    200
+                );
+
+                const mergeContainer = document.getElementById(
+                    "merge-container"
+                );
+                mergeContainer.innerHTML = "";
+                mergeContainer.appendChild(mergeDom);
+            });
         </script>
     </body>
 </html>
