@@ -1,10 +1,10 @@
 ## 文档地址
 
-### 绘制形状
+### 1-绘制形状
 
 https://developer.mozilla.org/zh-CN/docs/Web/API/Canvas_API/Tutorial/Drawing_shapes
 
-### 使用样式和颜色
+### 2-使用样式和颜色
 
 fillStyle = color
 设置图形的填充颜色。
@@ -24,7 +24,7 @@ ctx.fillStyle = "rgb(255,165,0)";
 ctx.fillStyle = "rgba(255,165,0,1)";
 ```
 
-### 绘制文本
+### 3-绘制文本
 
 https://developer.mozilla.org/zh-CN/docs/Web/API/Canvas_API/Tutorial/Drawing_text
 
