@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            canvas {
+                border: 1px solid #f00;
+            }
+            #hovered-color {
+                width: 200px;
+                height: 100px;
+                border: 1px solid #0f0;
+            }
+            #selected-color {
+                width: 200px;
+                height: 100px;
+                border: 1px solid #f00;
+            }
+            .color-container {
+                display: flex;
+            }
+            .zoom-wrap {
+                display: inline-block;
+                position: relative;
+                top: 0;
+                left: 0;
+            }
+            #zoom-canvas-bg {
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                z-index: 2;
+            }
+            #zoom-canvas-show {
+                z-index: 3;
+                border: 1px solid #00f;
+                position: relative;
+                top: 0;
+                left: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="300" height="350"></canvas>
+        <div id="zoom-wrap" class="zoom-wrap">
+            <canvas id="zoom-canvas-bg" width="300" height="350"></canvas>
+            <canvas id="zoom-canvas-show" width="300" height="350"></canvas>
+        </div>
+        <div>
+            <label for="smoothbtn">
+                <input
+                    type="checkbox"
+                    name="smoothbtn"
+                    checked="checked"
+                    id="smoothbtn"
+                />
+                Enable image smoothing
+            </label>
+        </div>
+        <div class="color-container">
+            <div id="hovered-color"></div>
+            <div id="selected-color"></div>
+        </div>
+
+        <script>
+            const img = new Image();
+            img.src = "./girl.jpg";
+            img.onload = function () {
+                draw(this);
+            };
+
+            function draw(img) {
+                const canvas = document.getElementById("canvas");
+                // const zoomWrap = document.getElementById("zoom-wrap");
+                const zoomCanvasBg = document.getElementById("zoom-canvas-bg");
+                const zoomCanvas = document.getElementById("zoom-canvas-show");
+                const hoveredColor = document.getElementById("hovered-color");
+                const selectedColor = document.getElementById("selected-color");
+
+                canvas.style.width = canvas.width * 0.4 + "px";
+                canvas.style.height = canvas.height * 0.4 + "px";
+
+                // zoomWrap.style.backgroundImage = `url(${img.src})`;
+                // zoomWrap.style.backgroundSize = `${canvas.width}px ${canvas.height}px`;
+
+                console.log(`${img.width}px ${img.height}px`);
+
+                const ctx = canvas.getContext("2d");
+                const ctxBg = zoomCanvasBg.getContext("2d");
+
+                ctx.drawImage(img, 0, 0);
+                ctxBg.drawImage(img, 0, 0);
+
+                img.style.display = "none";
+                const zoomctx = zoomCanvas.getContext("2d");
+
+                const smoothbtn = document.getElementById("smoothbtn");
+                const toggleSmoothing = function (event) {
+                    zoomctx.imageSmoothingEnabled = this.checked;
+                    zoomctx.mozImageSmoothingEnabled = this.checked;
+                    zoomctx.webkitImageSmoothingEnabled = this.checked;
+                    zoomctx.msImageSmoothingEnabled = this.checked;
+                };
+                smoothbtn.addEventListener("change", toggleSmoothing);
+
+                const zoom = function (event) {
+                    const x = event.layerX;
+                    const y = event.layerY;
+                    zoomctx.clearRect(0, 0, 300, 350);
+                    zoomctx.drawImage(
+                        canvas,
+                        Math.abs(x - 5),
+                        Math.abs(y - 5),
+                        100,
+                        100,
+                        // 0,
+                        // 0,
+                        Math.abs(x - 5),
+                        Math.abs(y - 5),
+                        100,
+                        100
+                    );
+                };
+
+                function pick(event, destination) {
+                    const x = event.layerX;
+                    const y = event.layerY;
+                    const pixel = ctx.getImageData(x, y, 1, 1);
+                    const data = pixel.data;
+
+                    const rgba = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${
+                        data[3] / 255
+                    })`;
+                    destination.style.background = rgba;
+                    destination.textContent = rgba;
+
+                    return rgba;
+                }
+
+                canvas.addEventListener("mousemove", (event) => {
+                    zoom(event);
+                    pick(event, hoveredColor);
+                });
+
+                canvas.addEventListener("mousemove", function (event) {});
+                canvas.addEventListener("click", function (event) {
+                    pick(event, selectedColor);
+                });
+            }
+        </script>
+        <script type="text/javascript">
+            document.addEventListener("mousedown", (event) => {
+                const x = event.x;
+                const y = event.y;
+                const pageX = event.pageX;
+                const pageY = event.pageY;
+                console.log(`x, y`, x, y);
+                console.log(`pageX, pageY`, pageX, pageY);
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            html,
+            body,
+            canvas {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                background: skyblue;
+            }
+            canvas {
+                border: 1px solid #f00;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            #hovered-color {
+                width: 200px;
+                height: 100px;
+                border: 1px solid #0f0;
+            }
+            #selected-color {
+                width: 200px;
+                height: 100px;
+                border: 1px solid #f00;
+            }
+            .color-container {
+                display: flex;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="300" height="350"></canvas>
+        <canvas id="zoom" width="300" height="350"></canvas>
+        <main style="margin-top: 360px">
+            <div>
+                <label for="smoothbtn">
+                    <input
+                        type="checkbox"
+                        name="smoothbtn"
+                        checked="checked"
+                        id="smoothbtn"
+                    />
+                    Enable image smoothing
+                </label>
+            </div>
+            <div class="color-container">
+                <div id="hovered-color"></div>
+                <div id="selected-color"></div>
+            </div>
+        </main>
+
+        <script>
+            /**
+             * @description 函数节流
+             * @param {Function} func 被节流函数
+             * @param {number} wait 时间
+             */
+            function throttle(func, wait) {
+                let previous = 0;
+                return function () {
+                    let now = Date.now(); // 1970/01/01 08:00:00 到现在的毫秒数
+                    if (now - previous >= wait) {
+                        func.apply(this, arguments);
+                        previous = now;
+                    }
+                };
+            }
+
+            const img = new Image();
+            img.src = "./girl.jpg";
+            img.onload = function () {
+                draw(this);
+            };
+
+            function draw(img) {
+                const canvas = document.getElementById("canvas");
+                const zoomdom = document.getElementById("zoom");
+
+                const hoveredColor = document.getElementById("hovered-color");
+                const selectedColor = document.getElementById("selected-color");
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+                zoomdom.width = img.width;
+                zoomdom.height = img.height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                img.style.display = "none";
+
+                const zoomctx = zoomdom.getContext("2d");
+
+                const smoothbtn = document.getElementById("smoothbtn");
+                const toggleSmoothing = function (event) {
+                    zoomctx.imageSmoothingEnabled = this.checked;
+                    zoomctx.mozImageSmoothingEnabled = this.checked;
+                    zoomctx.webkitImageSmoothingEnabled = this.checked;
+                    zoomctx.msImageSmoothingEnabled = this.checked;
+                };
+
+                smoothbtn.addEventListener("change", toggleSmoothing);
+
+                const zoom = function (event) {
+                    const { width, height } = zoomdom;
+
+                    const selectRect = {
+                        x: Math.abs(event.pageX),
+                        y: Math.abs(event.pageY),
+                        w: 100,
+                        h: 100,
+                        width,
+                        height,
+                    };
+
+                    const { x, y, w, h } = selectRect;
+
+                    zoomctx.clearRect(0, 0, width, height);
+                    zoomctx.drawImage(canvas, x, y, w, h, x, y, w, h);
+                    zoomctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+                    zoomctx.fillRect(0, 0, width, y); // 上
+                    const rightWidth = width - w - x;
+                    zoomctx.fillRect(
+                        x + w,
+                        y,
+                        rightWidth < 0 ? 0 : rightWidth,
+                        h
+                    ); // 右
+                    zoomctx.fillRect(0, y + h, width, height - y - h); // 下
+                    zoomctx.fillRect(0, y, x, h); // 左
+                };
+
+                function pick(event, destination) {
+                    const x = event.pageX;
+                    const y = event.pageY;
+                    const pixel = ctx.getImageData(x, y, 1, 1);
+                    const data = pixel.data;
+
+                    const rgba = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${
+                        data[3] / 255
+                    })`;
+                    destination.style.background = rgba;
+                    destination.textContent = rgba;
+
+                    return rgba;
+                }
+                const throPick = throttle(pick, 6);
+
+                document.addEventListener("mousemove", (event) => {
+                    zoom(event);
+                    throPick(event, hoveredColor);
+                });
+
+                document.addEventListener("click", function (event) {
+                    pick(event, selectedColor);
+                });
+            }
+        </script>
+    </body>
+</html>
